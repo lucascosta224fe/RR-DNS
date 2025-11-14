@@ -1,7 +1,9 @@
 package com.rr_dns.rr_dns.entities;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 
+@Builder
 @Table(name = "users")
 @Entity(name = "User")
 public class User {
