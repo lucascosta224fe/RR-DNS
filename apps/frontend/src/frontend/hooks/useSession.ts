@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { SessionData, User } from "../types/session";
+import type { SessionData, SessionUser } from "../types/session";
 
 const STORAGE_KEY = "psr_session";
 
-export function createSession(user: User): SessionData {
+export function createSession(user: SessionUser): SessionData {
   const sessionId =
     (crypto as any)?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   const loginAt = new Date().toISOString();
@@ -23,7 +23,7 @@ export function loadSession(): SessionData | null {
   }
 }
 
-export function clearSession() {
+export function clearStoredSession() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
@@ -48,5 +48,10 @@ export function useSession() {
       .join(" ");
   }, [session, tick]);
 
-  return { session, setSession, uptime };
+  function clearSession() {
+    clearStoredSession();
+    setSession(null);
+  }
+
+  return { session, setSession, uptime, clearSession };
 }

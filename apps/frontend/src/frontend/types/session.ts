@@ -1,12 +1,13 @@
-export interface User {
+export interface SessionUser {
   username: string;
   name: string;
-  email: string;
-  role: string;
+  birthDate: string;      
+  description: string;
+  role: "Admin" | "User";
 }
 
 export interface SessionData {
-  user: User;
+  user: SessionUser;
   sessionId: string;
-  loginAt: string;
+  loginAt: string;      
 }
