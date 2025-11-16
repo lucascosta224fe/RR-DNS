@@ -1,13 +1,13 @@
-// src/frontend/routes/Login.tsx
 import { useMemo, useState } from "react";
 import TextField from "../components/TextField";
 import { createSession, saveSession } from "../hooks/useSession";
 import type { SessionData, SessionUser } from "../types/session";
 
+
 const ADMIN_USER: SessionUser = {
-  username: "adm",                // pode mudar pra "admin" se quiser
+  username: "adm", // pode mudar pra "admin" se quiser
   name: "Administrador do Sistema",
-  birthDate: "2000-01-01",
+  birthDate: "01/01/2001",
   description: "Usuário administrador mockado para testes.",
   role: "Admin",
 };
@@ -39,7 +39,7 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
     // 2) AQUI DEPOIS entra a chamada pro backend / cadastro
     // ex: fetch("/api/login", { body: JSON.stringify({ username, password }) })
 
-    setError("Usuário ou senha inválidos.");
+    setError("Login e Senha não encontrados.");
   }
 
   return (
@@ -79,21 +79,26 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
                 error={error ?? undefined}
               />
 
-              <div className="flex gap-3 mt-1">
+              <div className="gap-3 mt-1">
                 <button
                   type="submit"
-                  className="flex-1 h-10 rounded-md bg-red-500 hover:bg-red-600 text-white font-medium transition"
+                  className="w-full h-10 rounded-md bg-red-500 hover:bg-red-600 text-white font-medium transition"
                 >
                   Entrar
                 </button>
 
-                <button
-                  type="button"
-                  onClick={onGoToRegister}
-                  className="flex-1 h-10 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium transition"
-                >
-                  Cadastrar
-                </button>
+                
+                  <p className="text-center text-sm mt-2 text-slate-700">
+                    Caso não tenha uma conta,{" "}
+                    <button
+                      type="button"
+                      onClick={onGoToRegister}
+                      className="text-red-600 font-medium hover:text-red-700 underline transition"
+                    >
+                      registre-se
+                    </button>
+                  </p>
+                
               </div>
             </form>
           </div>
