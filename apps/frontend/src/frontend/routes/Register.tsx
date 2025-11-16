@@ -1,3 +1,4 @@
+
 interface RegisterProps {
   onBackToLogin: () => void;
 }
@@ -14,7 +15,6 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                 <span>Cadastro de usuário</span>
               </h1>
               <p className="text-xs text-slate-500">
-                Login, senha, nome, data de nascimento e descrição.
               </p>
             </div>
             <button
@@ -31,7 +31,7 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               <label className="font-semibold text-slate-700">Login</label>
               <input
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
-                placeholder="usuário"
+                placeholder="E-mail"
               />
             </div>
 
@@ -60,20 +60,12 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-700">Descrição</label>
-              <textarea
-                rows={3}
-                className="rounded-md border border-slate-300 px-3 py-2 text-slate-800 resize-none"
-                placeholder="Fale um pouco sobre o usuário..."
-              />
-            </div>
 
             <button
               type="button"
               className="mt-3 h-10 rounded-md bg-slate-900 text-white font-medium hover:bg-slate-800"
             >
-              (mock) Salvar cadastro
+              Salvar cadastro
             </button>
           </form>
         </div>
