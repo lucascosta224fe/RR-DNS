@@ -33,6 +33,12 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+        if (path.startsWith("/h2-console")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             if (shouldNotFilter(request)) {
                 filterChain.doFilter(request, response);

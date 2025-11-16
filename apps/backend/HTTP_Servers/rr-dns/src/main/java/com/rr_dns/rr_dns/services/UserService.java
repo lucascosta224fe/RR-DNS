@@ -14,7 +14,9 @@ import org.springframework.security.core.Authentication;
 import com.rr_dns.rr_dns.entities.User;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class UserService {
@@ -44,11 +46,13 @@ public class UserService {
 
     public void registerUser(CreateUserDto createUserDto) {
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
         User newUser = User.builder()
                 .email(createUserDto.email())
                 .password(securityConfiguration.passwordEncoder().encode(createUserDto.password()))
                 .nome(createUserDto.nome())
-                .telefone(createUserDto.telefone())
+                .dataNascimento(createUserDto.dataNascimento())
                 .build();
 
         userRepository.save(newUser);
