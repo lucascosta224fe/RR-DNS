@@ -1,6 +1,6 @@
 package com.rr_dns.rr_dns.dtos;
 
-public record RecoveryJwtTokenDto(
+public record RecoveryJwtTokenDto (
         String token
-) {
+){
 }
