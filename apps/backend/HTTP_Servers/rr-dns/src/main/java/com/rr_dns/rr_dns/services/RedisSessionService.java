@@ -10,46 +10,45 @@ import java.util.Map;
 public class RedisSessionService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+
     private static final String TOKEN_PREFIX = "auth:token:";
-    private static final String SESSION_PREFIX = "auth:session:";
+    private static final String LOGIN_AT_PREFIX = "auth:loginAt:";
 
     public RedisSessionService(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
-    // Salva token com TTL
     public void saveToken(String token, String userId, Duration ttl) {
         String key = TOKEN_PREFIX + token;
         redisTemplate.opsForValue().set(key, userId, ttl);
     }
 
     public boolean isTokenValid(String token) {
-        String key = TOKEN_PREFIX + token;
-        return redisTemplate.hasKey(key);
+        return redisTemplate.hasKey(TOKEN_PREFIX + token);
     }
 
     public void invalidateToken(String token) {
-        String key = TOKEN_PREFIX + token;
-        redisTemplate.delete(key);
+        redisTemplate.delete(TOKEN_PREFIX + token);
     }
 
-    // Armazena atributos da sessão
-    public void saveSession(String sessionId, Map<String, Object> attributes, Duration ttl) {
-        String key = SESSION_PREFIX + sessionId;
-        redisTemplate.opsForValue().set(key, attributes, ttl);
+    public void saveLoginAt(String token, Long loginAt) {
+        String key = LOGIN_AT_PREFIX + token;
+        redisTemplate.opsForValue().set(key, loginAt);
     }
 
-    public Map<String, Object> getSession(String sessionId) {
-        String key = SESSION_PREFIX + sessionId;
+    public Long getLoginAt(String token) {
+        String key = LOGIN_AT_PREFIX + token;
         Object value = redisTemplate.opsForValue().get(key);
-        if (value instanceof Map) {
-            return (Map<String, Object>) value;
-        }
-        return null;
+        return value == null ? null : Long.parseLong(value.toString());
     }
 
-    public void deleteSession(String sessionId) {
-        String key = SESSION_PREFIX + sessionId;
-        redisTemplate.delete(key);
+    public void saveSession(String sessionId, Map<String, String> sessionData, Duration ttl) {
+        // Salva cada campo no Redis como HASH
+        redisTemplate.opsForHash().putAll(sessionId, sessionData);
+
+        // Define TTL da sessão
+        if (ttl != null) {
+            redisTemplate.expire(sessionId, ttl);
+        }
     }
 }

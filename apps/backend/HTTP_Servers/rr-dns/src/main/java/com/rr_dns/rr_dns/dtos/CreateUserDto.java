@@ -9,6 +9,7 @@ public record CreateUserDto(
         String email,
         String password,
         @JsonFormat(pattern = "dd-MM-yyyy")
-        LocalDate dataNascimento
+        LocalDate dataNascimento,
+        String descricao
 ) {
 }

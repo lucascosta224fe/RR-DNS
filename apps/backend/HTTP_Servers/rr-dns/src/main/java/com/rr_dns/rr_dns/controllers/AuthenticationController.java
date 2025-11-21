@@ -3,6 +3,7 @@ package com.rr_dns.rr_dns.controllers;
 import com.rr_dns.rr_dns.dtos.CreateUserDto;
 import com.rr_dns.rr_dns.dtos.LoginUserDto;
 import com.rr_dns.rr_dns.dtos.RecoveryJwtTokenDto;
+import com.rr_dns.rr_dns.dtos.SessionResponseDto;
 import com.rr_dns.rr_dns.services.UserService;
 import com.rr_dns.rr_dns.services.RedisSessionService;
 
@@ -33,25 +34,20 @@ public class AuthenticationController {
     private Long jwtExpiration;
 
     @PostMapping("/login")
-    public ResponseEntity<RecoveryJwtTokenDto> authenticateUser(
-            @RequestBody LoginUserDto loginUserDto,
-            HttpServletRequest request
-    ) {
-        //processo de autenticação
+    public ResponseEntity<RecoveryJwtTokenDto> authenticateUser(@RequestBody LoginUserDto loginUserDto,HttpServletRequest request)
+    {
         RecoveryJwtTokenDto tokenDto = userService.authenticateUser(loginUserDto);
 
         String jwtToken = tokenDto.token();
         String userEmail = loginUserDto.email();
 
-        //criar sessão no servidor
         HttpSession session = request.getSession(true);
         session.setAttribute("email", userEmail);
 
-        //salvar token no Redis com TTL igual ao JWT
         Duration ttl = Duration.ofMillis(jwtExpiration);
+
         redisSessionService.saveToken(jwtToken, userEmail, ttl);
 
-        //salvar dados adicionais na sessão do Redis
         redisSessionService.saveSession(
                 session.getId(),
                 Map.of("email", userEmail),
@@ -65,5 +61,15 @@ public class AuthenticationController {
     public ResponseEntity<Void> registerUser(@RequestBody CreateUserDto createUserDto) {
         userService.registerUser(createUserDto);
         return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<SessionResponseDto> getProfile(HttpServletRequest request) {
+        try {
+            SessionResponseDto response = userService.getProfile(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }
