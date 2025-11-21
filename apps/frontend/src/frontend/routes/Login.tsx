@@ -24,7 +24,7 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
 
   const hostname = useMemo(() => window.location.hostname || "localhost", []);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
@@ -39,6 +39,27 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
     // 2) AQUI DEPOIS entra a chamada pro backend / cadastro
     // ex: fetch("/api/login", { body: JSON.stringify({ username, password }) })
 
+    try{
+      const response = await fetch("http://localhost:3000/login", {
+        method: "POST", 
+        headers:{'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password}),
+      });
+      
+      const data = await response.json();
+      console.log(data)
+
+      if(data.success){
+        const sess = createSession(data.user);
+        saveSession(sess);
+        onLoginSuccess(sess);
+      }else{
+        setError(data.message || "Login falhou");
+      }
+    } catch(error){
+      console.error(error);
+      setError("Erro de conexão com o servidor");
+    }
     setError("Login e Senha não encontrados.");
   }
 
@@ -65,7 +86,7 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
               <TextField
                 label="Usuário"
                 placeholder="Digite seu login"
-                value={username}
+                value={username} 
                 onChange={(e) => setUsername(e.currentTarget.value)}
                 autoComplete="username"
               />
@@ -75,8 +96,8 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.currentTarget.value)}
+                error={error ?? undefined}                 
                 autoComplete="current-password"
-                error={error ?? undefined}
               />
 
               <div className="gap-3 mt-1">
