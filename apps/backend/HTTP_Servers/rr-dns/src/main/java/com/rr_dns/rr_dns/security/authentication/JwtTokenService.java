@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.rr_dns.rr_dns.exception.InvalidTokenException;
 import com.rr_dns.rr_dns.security.userDetails.UserDetailsImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -44,7 +45,7 @@ public class JwtTokenService {
                     .verify(token)
                     .getSubject();
         } catch (JWTVerificationException exception) {
-            throw new JWTVerificationException("Token inválido ou expirado.");
+            throw new InvalidTokenException();
         }
     }
 
@@ -59,7 +60,7 @@ public class JwtTokenService {
             return jwt.getSubject().equals(userDetails.getUsername()) &&
                     !jwt.getExpiresAt().toInstant().isBefore(Instant.now());
         } catch (JWTVerificationException exception) {
-            return false;
+            throw new InvalidTokenException();
         }
     }
 

@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+
 
 import java.time.Duration;
 import java.util.Map;
@@ -58,7 +60,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> registerUser(@RequestBody CreateUserDto createUserDto) {
+    public ResponseEntity<Void> registerUser(@Valid @RequestBody CreateUserDto createUserDto) {
         userService.registerUser(createUserDto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }

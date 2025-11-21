@@ -2,6 +2,7 @@ package com.rr_dns.rr_dns.services;
 
 import com.rr_dns.rr_dns.dtos.*;
 import com.rr_dns.rr_dns.entities.User;
+import com.rr_dns.rr_dns.exception.*;
 import com.rr_dns.rr_dns.repositories.UserRepository;
 import com.rr_dns.rr_dns.security.authentication.JwtTokenService;
 import com.rr_dns.rr_dns.security.config.SecurityConfiguration;
@@ -9,11 +10,12 @@ import com.rr_dns.rr_dns.security.userDetails.UserDetailsImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpSession;
-
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -34,23 +36,32 @@ public class UserService {
     private SecurityConfiguration securityConfiguration;
 
     public RecoveryJwtTokenDto authenticateUser(LoginUserDto loginUserDto) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginUserDto.email(),
+                            loginUserDto.password()
+                    )
+            );
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginUserDto.email(),
-                        loginUserDto.password()
-                )
-        );
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String token = jwtTokenService.generateToken(userDetails);
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String token = jwtTokenService.generateToken(userDetails);
+            redisSessionService.saveLoginAt(token, System.currentTimeMillis());
 
-        redisSessionService.saveLoginAt(token, System.currentTimeMillis());
+            return new RecoveryJwtTokenDto(token);
 
-        return new RecoveryJwtTokenDto(token);
+        } catch (BadCredentialsException e) {
+            throw new InvalidCredentialsException();
+        }
     }
 
     public void registerUser(CreateUserDto createUserDto) {
+
+        Optional<User> existingUser = userRepository.findByEmail(createUserDto.email());
+        if (existingUser.isPresent()) {
+            throw new EmailAlreadyExistsException();
+        }
 
         User newUser = User.builder()
                 .email(createUserDto.email())
@@ -66,18 +77,18 @@ public class UserService {
     public SessionResponseDto getProfile(HttpServletRequest request) {
 
         String token = jwtTokenService.recoveryToken(request);
-        if (token == null) throw new RuntimeException("Token ausente");
+        if (token == null) throw new MissingTokenException();
 
         String userEmail = jwtTokenService.getSubjectFromToken(token);
-        if (userEmail == null) throw new RuntimeException("Token inválido");
+        if (userEmail == null) throw new InvalidTokenException();
 
         HttpSession session = request.getSession(false);
-        if (session == null) throw new RuntimeException("Sessão expirada");
+        if (session == null) throw new SessionExpiredException();
 
         String sessionId = session.getId();
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         Long loginAt = redisSessionService.getLoginAt(token);
 

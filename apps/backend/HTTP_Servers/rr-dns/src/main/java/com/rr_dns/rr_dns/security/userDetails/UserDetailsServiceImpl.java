@@ -1,6 +1,7 @@
 package com.rr_dns.rr_dns.security.userDetails;
 
 import com.rr_dns.rr_dns.entities.User;
+import com.rr_dns.rr_dns.exception.UserNotFoundException;
 import com.rr_dns.rr_dns.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +19,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new UserNotFoundException());
         return new UserDetailsImpl(user);
     }
 }

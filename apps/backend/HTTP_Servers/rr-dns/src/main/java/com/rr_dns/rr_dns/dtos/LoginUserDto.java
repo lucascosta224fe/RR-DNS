@@ -1,7 +1,11 @@
 package com.rr_dns.rr_dns.dtos;
 
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public record LoginUserDto (
-        String email,
-        String password
+        @NotBlank String email,
+        @NotBlank String password
 ){
 }

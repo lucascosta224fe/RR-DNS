@@ -1,5 +1,8 @@
 package com.rr_dns.rr_dns.security.authentication;
 
+import com.rr_dns.rr_dns.exception.AuthenticationProcessException;
+import com.rr_dns.rr_dns.exception.InvalidTokenException;
+import com.rr_dns.rr_dns.exception.MissingTokenException;
 import com.rr_dns.rr_dns.security.config.SecurityConfiguration;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.rr_dns.rr_dns.security.userDetails.UserDetailsServiceImpl;
@@ -53,14 +56,12 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
             // 1 - Recupera o token
             String token = recoveryToken(request);
             if (token == null) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token ausente");
-                return;
+                throw new MissingTokenException();
             }
 
             // 2 - VERIFICAÇÃO NO REDIS (revogação, logout, expiração no Redis)
             if (!redisSessionService.isTokenValid(token)) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token revogado");
-                return;
+                throw new InvalidTokenException();
             }
 
             // 3 - Extrai e valida via JWT
@@ -76,16 +77,15 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido ou expirado");
-                    return;
+                    throw new InvalidTokenException();
                 }
             }
 
         } catch (JWTVerificationException e) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido: " + e.getMessage());
+            writeErrorResponse(response, 401, "Token inválido");
             return;
         } catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro na autenticação");
+            writeErrorResponse(response, 500, "Erro no processo de autenticação");
             return;
         }
 
@@ -105,5 +105,13 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         return Arrays.stream(SecurityConfiguration.ENDPOINTS_WITH_AUTHENTICATION_NOT_REQUIRED)
                 .anyMatch(uri -> uri.equals(requestURI));
+    }
+
+    private void writeErrorResponse(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.getWriter().write(
+                String.format("{\"error\": \"%s\"}", message)
+        );
     }
 }
