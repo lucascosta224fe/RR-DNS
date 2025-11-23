@@ -42,7 +42,7 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
       const response = await fetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }), // Backend espera receber isso
+        body: JSON.stringify({ email:username, password }), // Backend espera receber isso
       });
 
       // Se o Java retornar status 200 (OK)
