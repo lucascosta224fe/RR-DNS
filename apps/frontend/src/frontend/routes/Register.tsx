@@ -15,6 +15,12 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   async function handleRegister() {
     setMsg(""); // Limpa mensagens anteriores
 
+    const formatarDataParaJava = (dataIso: string) => {
+        if (!dataIso) return null;
+        const [ano, mes, dia] = dataIso.split('-'); // Quebra a string nos traços
+        return `${dia}-${mes}-${ano}`; // Monta na ordem inversa
+    };
+
     try {
       // CORREÇÃO: Caminho relativo para funcionar no RR DNS
       const response = await fetch('/auth/register', {
@@ -25,8 +31,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
           email, 
           password, 
           nome:name, 
-          dataNascimento:birthDate,
-          descricao: ''
+          dataNascimento: formatarDataParaJava(birthDate),
+          descricao: 'Novo usuário'
         })
       });
 
