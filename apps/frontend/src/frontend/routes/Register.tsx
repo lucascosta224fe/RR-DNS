@@ -22,10 +22,11 @@ export default function Register({ onBackToLogin }: RegisterProps) {
         headers: { 'Content-Type': 'application/json' },
         // Java geralmente espera "username", então mapeamos email -> username
         body: JSON.stringify({ 
-          username: email, 
+          email, 
           password, 
-          name, 
-          birthDate 
+          nome:name, 
+          dataNascimento:birthDate,
+          descricao: ''
         })
       });
 
