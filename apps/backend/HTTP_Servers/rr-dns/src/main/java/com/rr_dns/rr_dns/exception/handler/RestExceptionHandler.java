@@ -28,7 +28,7 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler({
-            UserNotFoundException.class
+//            UserNotFoundException.class
     })
     public ResponseEntity<ApiError> notFoundException(RuntimeException ex) {
         ApiError apiError = ApiError.builder()
@@ -42,6 +42,9 @@ public class RestExceptionHandler {
 
     @ExceptionHandler({
             EmailAlreadyExistsException.class,
+            InvalidDataException.class,
+            UserNotFoundException.class
+
     })
     public ResponseEntity<ApiError> conflictException(RuntimeException ex) {
         ApiError apiError = ApiError.builder()
@@ -56,7 +59,8 @@ public class RestExceptionHandler {
     @ExceptionHandler({
             InvalidTokenException.class,
             MissingTokenException.class,
-            InvalidCredentialsException.class   // 🔥 ADICIONADO AQUI
+            InvalidCredentialsException.class,
+            InvalidEmailFormatException.class
     })
     public ResponseEntity<ApiError> unauthorizedException(RuntimeException ex) {
         ApiError apiError = ApiError.builder()
@@ -68,6 +72,21 @@ public class RestExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.UNAUTHORIZED);
     }
 
+    @ExceptionHandler({
+            EmailEmptyException.class,
+            PasswordEmptyException.class
+    })
+    public ResponseEntity<ApiError> handleCustomValidation(RuntimeException ex) {
+
+        ApiError apiError = ApiError.builder()
+                .timestamp(LocalDateTime.now())
+                .code(HttpStatus.BAD_REQUEST.value())
+                .status(HttpStatus.BAD_REQUEST.name())
+                .errors(List.of(ex.getMessage()))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiError);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> argumentNotValidException(MethodArgumentNotValidException ex) {
@@ -87,7 +106,9 @@ public class RestExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(SessionExpiredException.class)
+    @ExceptionHandler({
+            SessionExpiredException.class,
+    })
     public ResponseEntity<ApiError> sessionExpiredHandler(SessionExpiredException ex) {
         ApiError apiError = ApiError.builder()
                 .timestamp(LocalDateTime.now())

@@ -4,6 +4,8 @@ import com.rr_dns.rr_dns.dtos.CreateUserDto;
 import com.rr_dns.rr_dns.dtos.LoginUserDto;
 import com.rr_dns.rr_dns.dtos.RecoveryJwtTokenDto;
 import com.rr_dns.rr_dns.dtos.SessionResponseDto;
+import com.rr_dns.rr_dns.exception.EmailEmptyException;
+import com.rr_dns.rr_dns.exception.PasswordEmptyException;
 import com.rr_dns.rr_dns.services.UserService;
 import com.rr_dns.rr_dns.services.RedisSessionService;
 
