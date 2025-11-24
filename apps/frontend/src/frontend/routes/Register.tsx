@@ -5,36 +5,68 @@ interface RegisterProps {
 }
 
 export default function Register({ onBackToLogin }: RegisterProps) {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [msg, setMsg] = useState("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const formatarDataParaJava = (dataIso: string) => {
+    if (!dataIso) return null;
+    const [ano, mes, dia] = dataIso.split("-");
+    return `${dia}-${mes}-${ano}`;
+  };
 
   async function handleRegister() {
+    setMsg("");
+    setStatus("idle");
+
     try {
-      const response = await fetch('http://localhost:3000/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, birthDate })
+      const response = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // mandamos todas as variações possíveis pro backend
+          email,
+          username: email,
+          login: email,
+          password,
+          nome: name,
+          dataNascimento: formatarDataParaJava(birthDate),
+          descricao: "Novo usuário",
+        }),
       });
 
-      const data = await response.json();
+      if (response.ok) {
+        setStatus("success");
+        setMsg("Cadastro realizado com sucesso! Redirecionando para o login...");
 
-      if(response.ok){
-        alert("Cadastro Realizado! Faça Login.");
-        onBackToLogin();
-      }else{
-        setMsg(data.erro || "Erro ao cadastrar");
+        // redireciona para o login depois de 2s
+        setTimeout(() => {
+          onBackToLogin();
+        }, 2000);
+      } else {
+        try {
+          const data = await response.json();
+          setStatus("error");
+          setMsg(data.message || "Erro ao cadastrar. Verifique os dados.");
+        } catch {
+          setStatus("error");
+          setMsg("Erro ao cadastrar (Verifique os dados).");
+        }
       }
-    }catch(error){
+    } catch (error) {
       console.error(error);
-      setMsg("Erro de conexão com o servidor");
+      setStatus("error");
+      setMsg("Erro de conexão com o servidor.");
     }
-    
   }
 
+  const msgColor =
+    status === "success"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+      : "bg-red-50 text-red-700 border-red-300";
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
@@ -46,8 +78,6 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                 <span className="text-2xl">⚡</span>
                 <span>Cadastro de usuário</span>
               </h1>
-              <p className="text-xs text-slate-500">
-              </p>
             </div>
             <button
               onClick={onBackToLogin}
@@ -57,15 +87,24 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </button>
           </header>
 
-          {/* AQUI o Nathan implementa a lógica / integração com backend depois */}
           <form className="grid gap-3 text-sm">
-            {msg && <div className="text-red-500 text-center font-bold">{msg}</div>}
+            {msg && (
+              <div
+                className={`mb-2 px-3 py-2 rounded-md border text-xs font-medium ${msgColor}`}
+              >
+                {msg}
+              </div>
+            )}
+
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-700">Login</label>
+              <label className="font-semibold text-slate-700">
+                Login (E-mail)
+              </label>
               <input
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
-                placeholder="E-mail"
-                value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -75,27 +114,34 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                 type="password"
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
                 placeholder="••••••••"
-                value={password} onChange={e => setPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-700">Nome completo</label>
+              <label className="font-semibold text-slate-700">
+                Nome completo
+              </label>
               <input
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
                 placeholder="Nome e sobrenome"
-                value={name} onChange={e => setName(e.target.value)}              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-700">Data de nascimento</label>
-              <input
-                type="date"
-                className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
-                value={birthDate} onChange={e => setBirthDate(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
               />
             </div>
 
+            <div className="flex flex-col gap-1">
+              <label className="font-semibold text-slate-700">
+                Data de nascimento
+              </label>
+              <input
+                type="date"
+                className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+              />
+            </div>
 
             <button
               type="button"
@@ -106,9 +152,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </button>
           </form>
         </div>
-
         <p className="text-center text-xs text-slate-500 mt-4">
-          Esta tela é mock – integração real com backend será feita depois.
+          PSReletric.com • Cadastro Integrado
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-package com.rr_dns.rr_dns.security.config;
+/* package com.rr_dns.rr_dns.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,4 +41,20 @@ public class RedisConfig {
     public ConfigureRedisAction configureRedisAction() {
         return ConfigureRedisAction.NO_OP;
     }
+}
+ */
+
+
+
+package com.rr_dns.rr_dns.security.config;
+
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RedisConfig {
+
+    // Redis DESABILITADO no ambiente local.
+    // Não registra @EnableRedisHttpSession, nem ConfigureRedisAction,
+    // só existe para não quebrar as injeções de dependência.
+
 }

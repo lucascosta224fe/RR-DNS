@@ -35,14 +35,23 @@ public class SecurityConfiguration {
                 .headers(headers -> headers.frameOptions().disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/",              // A raiz do site
+                                "/index.html",    // O arquivo HTML principal
+                                "/assets/**",     // Onde ficam os JS e CSS do React
+                                "/favicon.ico",   // Ícone do site
+                                "/vite.svg"       // Ícone do Vite (se houver)
+                        ).permitAll()
+
+                        .requestMatchers(
                                 "/auth/login",
                                 "/auth/register",
                                 "/h2-console/**"
                         ).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .addFilterBefore(userAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

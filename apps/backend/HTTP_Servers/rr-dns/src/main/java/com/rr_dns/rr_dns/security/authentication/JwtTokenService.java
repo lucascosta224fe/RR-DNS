@@ -1,87 +1,82 @@
 package com.rr_dns.rr_dns.security.authentication;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTCreationException;
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.rr_dns.rr_dns.exception.InvalidTokenException;
-import com.rr_dns.rr_dns.security.userDetails.UserDetailsImpl;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.util.Date;
+import java.util.function.Function;
 
 @Service
 public class JwtTokenService {
 
-    private static final String SECRET_KEY = "4Z^XrroxR@dWxqf$mTTKwW$!@#qGr4P";
-    private static final String ISSUER = "rr-dns-api";
-    private static final long TOKEN_EXPIRATION_HOURS = 4;
+    @Value("${jwt.secret}")
+    private String secret;
 
-    public String generateToken(UserDetailsImpl user) {
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY);
-            return JWT.create()
-                    .withIssuer(ISSUER)
-                    .withIssuedAt(creationDate())
-                    .withExpiresAt(expirationDate())
-                    .withSubject(user.getUsername())
-                    .sign(algorithm);
-        } catch (JWTCreationException exception) {
-            throw new JWTCreationException("Erro ao gerar token.", exception);
-        }
+    @Value("${jwt.expiration}")
+    private long expirationMs;
+
+    private Key getSignKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String getSubjectFromToken(String token) {
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY);
-            return JWT.require(algorithm)
-                    .withIssuer(ISSUER)
-                    .build()
-                    .verify(token)
-                    .getSubject();
-        } catch (JWTVerificationException exception) {
-            throw new InvalidTokenException();
-        }
+    public String generateToken(UserDetails userDetails) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expirationMs);
+
+        return Jwts.builder()
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String getSubject(String token) {
+        return extractClaim(token, claims -> claims.getSubject());
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY);
-            DecodedJWT jwt = JWT.require(algorithm)
-                    .withIssuer(ISSUER)
-                    .build()
-                    .verify(token);
-
-            return jwt.getSubject().equals(userDetails.getUsername()) &&
-                    !jwt.getExpiresAt().toInstant().isBefore(Instant.now());
-        } catch (JWTVerificationException exception) {
-            throw new InvalidTokenException();
-        }
+        String username = getSubject(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
-    private Instant creationDate() {
-        return ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).toInstant();
+    private boolean isTokenExpired(String token) {
+        Date expiration = extractClaim(token, claims -> claims.getExpiration());
+        return expiration.before(new Date());
     }
 
-    private Instant expirationDate() {
-        return ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
-                .plusHours(TOKEN_EXPIRATION_HOURS)
-                .toInstant();
+    private <T> T extractClaim(String token, Function<io.jsonwebtoken.Claims, T> resolver) {
+        io.jsonwebtoken.Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return resolver.apply(claims);
     }
 
     public String recoveryToken(HttpServletRequest request) {
-        String authorizationHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            return null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
         }
 
-        return authorizationHeader.substring(7);
-    }
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            Object token = session.getAttribute("token");
+            if (token instanceof String s && !s.isBlank()) {
+                return s;
+            }
+        }
 
+        return null;
+    }
 }

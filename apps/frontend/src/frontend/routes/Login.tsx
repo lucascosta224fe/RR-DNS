@@ -3,9 +3,8 @@ import TextField from "../components/TextField";
 import { createSession, saveSession } from "../hooks/useSession";
 import type { SessionData, SessionUser } from "../types/session";
 
-
 const ADMIN_USER: SessionUser = {
-  username: "adm", // pode mudar pra "admin" se quiser
+  username: "adm",
   name: "Administrador do Sistema",
   birthDate: "01/01/2001",
   description: "Usuário administrador mockado para testes.",
@@ -25,50 +24,58 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
   const hostname = useMemo(() => window.location.hostname || "localhost", []);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+  e.preventDefault();
+  setError(null);
 
-    // 1) login do ADM mocado
-    if (username === ADMIN_USER.username && password === "1234") {
-      const sess = createSession(ADMIN_USER);
+  // mock ADM local
+  if (username === ADMIN_USER.username && password === "1234") {
+    const sess = createSession(ADMIN_USER);
+    saveSession(sess);
+    onLoginSuccess(sess);
+    return;
+  }
+
+  try {
+    const response = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: username,
+        username,
+        login: username,
+        password,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Resposta do Backend:", data);
+
+      const userFromBackend = (data as any).user || data;
+      const sess = createSession(userFromBackend);
       saveSession(sess);
       onLoginSuccess(sess);
-      return;
-    }
-
-    // 2) AQUI DEPOIS entra a chamada pro backend / cadastro
-    // ex: fetch("/api/login", { body: JSON.stringify({ username, password }) })
-
-    try{
-      const response = await fetch("http://localhost:3000/login", {
-        method: "POST", 
-        headers:{'Content-Type': 'application/json'},
-        body: JSON.stringify({username, password}),
-      });
-      
-      const data = await response.json();
-      console.log(data)
-
-      if(data.success){
-        const sess = createSession(data.user);
-        saveSession(sess);
-        onLoginSuccess(sess);
-      }else{
-        setError(data.message || "Login falhou");
+    } else {
+      let backendMsg = "Login ou senha inválidos.";
+      try {
+        const data = await response.json();
+        if (data?.message) backendMsg = data.message;
+      } catch {
+        /* ignora se não vier JSON */
       }
-    } catch(error){
-      console.error(error);
-      setError("Erro de conexão com o servidor");
+      setError(backendMsg);
     }
-    setError("Login e Senha não encontrados.");
+  } catch (err) {
+    console.error(err);
+    setError("Erro de conexão com o servidor.");
   }
+}
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="relative rounded-2xl bg-white shadow-lg border border-slate-200">
           <div className="p-7">
-            {/* topo / logo e título */}
             <div className="text-center mb-6">
               <div className="inline-flex items-center gap-2 mb-1">
                 <span className="text-2xl">⚡</span>
@@ -77,16 +84,22 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
                 </span>
               </div>
               <div className="text-xs text-slate-500">
-                Login • Servidor: <span className="font-mono">{hostname}</span>
+                Login • Servidor:{" "}
+                <span className="font-mono">{hostname}</span>
               </div>
             </div>
 
-            {/* formulário */}
+            {error && (
+              <div className="mb-4 px-3 py-2 rounded-md border border-red-200 bg-red-50 text-xs text-red-700 font-medium text-center">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="grid gap-4">
               <TextField
                 label="Usuário"
-                placeholder="Digite seu login"
-                value={username} 
+                placeholder="Digite seu e-mail"
+                value={username}
                 onChange={(e) => setUsername(e.currentTarget.value)}
                 autoComplete="username"
               />
@@ -96,7 +109,6 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.currentTarget.value)}
-                error={error ?? undefined}                 
                 autoComplete="current-password"
               />
 
@@ -108,18 +120,16 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
                   Entrar
                 </button>
 
-                
-                  <p className="text-center text-sm mt-2 text-slate-700">
-                    Caso não tenha uma conta,{" "}
-                    <button
-                      type="button"
-                      onClick={onGoToRegister}
-                      className="text-red-600 font-medium hover:text-red-700 underline transition"
-                    >
-                      registre-se
-                    </button>
-                  </p>
-                
+                <p className="text-center text-sm mt-2 text-slate-700">
+                  Caso não tenha uma conta,{" "}
+                  <button
+                    type="button"
+                    onClick={onGoToRegister}
+                    className="text-red-600 font-medium hover:text-red-700 underline transition"
+                  >
+                    registre-se
+                  </button>
+                </p>
               </div>
             </form>
           </div>

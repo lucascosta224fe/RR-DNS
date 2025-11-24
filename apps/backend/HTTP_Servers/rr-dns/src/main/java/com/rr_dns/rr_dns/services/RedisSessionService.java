@@ -1,4 +1,4 @@
-package com.rr_dns.rr_dns.services;
+/* package com.rr_dns.rr_dns.services;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -50,5 +50,41 @@ public class RedisSessionService {
         if (ttl != null) {
             redisTemplate.expire(sessionId, ttl);
         }
+    }
+}
+ */
+
+
+package com.rr_dns.rr_dns.services;
+
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.util.Map;
+
+/**
+ * Stub local de Redis.
+ *
+ * No ambiente do trabalho final, você pode ligar Redis de verdade.
+ * Aqui, para rodar no seu PC sem Docker/Redis, deixamos tudo em no-op.
+ */
+@Service
+public class RedisSessionService {
+
+    public void saveLoginAt(String token, Long time) {
+        // No-op: em produção você gravaria no Redis
+    }
+
+    public Long getLoginAt(String token) {
+        // Para não quebrar, devolve o horário atual
+        return System.currentTimeMillis();
+    }
+
+    public void saveToken(String jwtToken, String email, Duration ttl) {
+        // No-op
+    }
+
+    public void saveSession(String sessionId, Map<String, Object> data, Duration ttl) {
+        // No-op
     }
 }
