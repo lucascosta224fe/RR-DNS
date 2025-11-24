@@ -3,7 +3,6 @@ import TextField from "../components/TextField";
 import { createSession, saveSession } from "../hooks/useSession";
 import type { SessionData, SessionUser } from "../types/session";
 
-// Usuário Admin local para testes (opcional, pode manter ou remover)
 const ADMIN_USER: SessionUser = {
   username: "adm",
   name: "Administrador do Sistema",
@@ -25,59 +24,58 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
   const hostname = useMemo(() => window.location.hostname || "localhost", []);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+  e.preventDefault();
+  setError(null);
 
-    // 1) Mock local (pode manter para testes rápidos)
-    if (username === ADMIN_USER.username && password === "1234") {
-      const sess = createSession(ADMIN_USER);
+  // mock ADM local
+  if (username === ADMIN_USER.username && password === "1234") {
+    const sess = createSession(ADMIN_USER);
+    saveSession(sess);
+    onLoginSuccess(sess);
+    return;
+  }
+
+  try {
+    const response = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: username,
+        username,
+        login: username,
+        password,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Resposta do Backend:", data);
+
+      const userFromBackend = (data as any).user || data;
+      const sess = createSession(userFromBackend);
       saveSession(sess);
       onLoginSuccess(sess);
-      return;
-    }
-
-    // 2) Chamada REAL para o Backend Java
-    try {
-      // ATENÇÃO: Mudamos para caminho relativo e rota /auth/login
-      const response = await fetch("/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email:username, password }), // Backend espera receber isso
-      });
-
-      // Se o Java retornar status 200 (OK)
-      if (response.ok) {
-        // Assumindo que o Java retorna o objeto do usuário ou sessão direto
-        // Se o Java retornar vazio, precisamos tratar, mas geralmente retorna JSON
+    } else {
+      let backendMsg = "Login ou senha inválidos.";
+      try {
         const data = await response.json();
-        
-        console.log("Resposta do Backend:", data);
-
-        // Cria a sessão com os dados reais vindos do banco
-        // Verifique se 'data' é o usuário ou se o usuário está em 'data.user'
-        // Vou assumir aqui que 'data' já é o objeto do usuário (UserDTO)
-        const userFromBackend = data.user || data; 
-        
-        const sess = createSession(userFromBackend);
-        saveSession(sess);
-        onLoginSuccess(sess);
-      } else {
-        // Se o Java retornar 401 ou 403
-        setError("Login ou senha inválidos.");
+        if (data?.message) backendMsg = data.message;
+      } catch {
+        /* ignora se não vier JSON */
       }
-    } catch (error) {
-      console.error(error);
-      setError("Erro de conexão com o servidor.");
+      setError(backendMsg);
     }
-    // REMOVI A LINHA QUE ESTAVA AQUI EMBAIXO FORÇANDO O ERRO
+  } catch (err) {
+    console.error(err);
+    setError("Erro de conexão com o servidor.");
   }
+}
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="relative rounded-2xl bg-white shadow-lg border border-slate-200">
           <div className="p-7">
-            {/* topo / logo e título */}
             <div className="text-center mb-6">
               <div className="inline-flex items-center gap-2 mb-1">
                 <span className="text-2xl">⚡</span>
@@ -86,15 +84,21 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
                 </span>
               </div>
               <div className="text-xs text-slate-500">
-                Login • Servidor: <span className="font-mono">{hostname}</span>
+                Login • Servidor:{" "}
+                <span className="font-mono">{hostname}</span>
               </div>
             </div>
 
-            {/* formulário */}
+            {error && (
+              <div className="mb-4 px-3 py-2 rounded-md border border-red-200 bg-red-50 text-xs text-red-700 font-medium text-center">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="grid gap-4">
               <TextField
                 label="Usuário"
-                placeholder="Digite seu login"
+                placeholder="Digite seu e-mail"
                 value={username}
                 onChange={(e) => setUsername(e.currentTarget.value)}
                 autoComplete="username"
@@ -105,7 +109,6 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.currentTarget.value)}
-                error={error ?? undefined}
                 autoComplete="current-password"
               />
 
