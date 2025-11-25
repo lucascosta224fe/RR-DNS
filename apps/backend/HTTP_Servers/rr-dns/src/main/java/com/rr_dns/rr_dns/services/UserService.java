@@ -85,9 +85,6 @@ public class UserService {
 
     public SessionResponseDto getProfile(HttpServletRequest request, Long id) {
 
-        HttpSession session = request.getSession(false);
-        if (session == null) throw new SessionExpiredException();
-
         User user = userRepository.findById(id)
                 .orElseThrow(UserNotFoundException::new);
 
@@ -100,7 +97,7 @@ public class UserService {
         );
 
         return new SessionResponseDto(
-                session.getId(),
+                user.getSession().getToken(),
                 user.getSession().getExpiration(),
                 "192.168.1.21",
                 userDto

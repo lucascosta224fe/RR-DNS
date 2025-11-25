@@ -26,7 +26,6 @@ public class SessionService {
     public void isValidToken(HttpServletRequest request, Session session) {
         String token = jwtTokenService.recoveryToken(request);
         if (token == null) throw new MissingTokenException();
-
         if (token.equals(session.getToken()) && session.getExpiration().isAfter(LocalDateTime.now()))
             return;
         throw new SessionExpiredException();
