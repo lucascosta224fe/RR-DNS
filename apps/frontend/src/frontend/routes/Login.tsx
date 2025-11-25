@@ -56,8 +56,8 @@ export default function Login({ onLoginSuccess, onGoToRegister }: LoginProps) {
         // Cria a sessão com os dados reais vindos do banco
         // Verifique se 'data' é o usuário ou se o usuário está em 'data.user'
         // Vou assumir aqui que 'data' já é o objeto do usuário (UserDTO)
-        const userFromBackend = data.user || data; 
-        
+        const userFromBackend = data.token; 
+        localStorage.setItem("idUser", data.idUser);
         const sess = createSession(userFromBackend);
         saveSession(sess);
         onLoginSuccess(sess);

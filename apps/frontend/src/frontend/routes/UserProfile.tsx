@@ -25,14 +25,14 @@ export default function UserProfile({ session, uptime, onLogout }: Props) {
 
   // Efeito para validar a sessão no Redis e pegar o nome do servidor
   useEffect(() => {
-    fetch("/auth/profile")
+    fetch("/auth/profile/"+localStorage.getItem("idUser"))
       .then(async (res) => {
         if (res.ok) {
           const data = await res.json();
           // Se o seu Java retornar o nome do servidor, use-o aqui.
           // Ex: data.serverName ou data.hostname
-          if (data.serverName) {
-            setBackendHostname(data.serverName);
+          if (data.ipServer) {
+            setBackendHostname(data.ipServer);
           } else {
             setBackendHostname("Java Backend (Sem nome)");
           }
