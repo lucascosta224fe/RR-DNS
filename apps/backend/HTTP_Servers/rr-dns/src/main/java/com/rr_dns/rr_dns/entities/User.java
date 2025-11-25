@@ -24,4 +24,7 @@ public class User implements Serializable {
     private String password;
     private LocalDate dataNascimento;
     private String descricao;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "session_id")
+    private Session session;
 }

@@ -15,6 +15,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpSession;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -24,19 +27,24 @@ public class UserService {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private JwtTokenService jwtTokenService;
-
-    @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private RedisSessionService redisSessionService;
+    private SessionService sessionService;
 
     @Autowired
     private SecurityConfiguration securityConfiguration;
 
+    private final LocalDate DATA_NASCIMENTO_VALIDA = LocalDate.of(1910, 1, 1);
+
     public RecoveryJwtTokenDto authenticateUser(LoginUserDto loginUserDto) {
         try {
+
+            if(loginUserDto.email() == null || loginUserDto.email().isEmpty()) throw new EmailEmptyException();
+            if(!EmailIsValid(loginUserDto.email())) throw new InvalidEmailFormatException();
+            if(loginUserDto.password() == null || loginUserDto.password().isEmpty()) throw new PasswordEmptyException();
+
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginUserDto.email(),
@@ -44,12 +52,11 @@ public class UserService {
                     )
             );
 
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String token = jwtTokenService.generateToken(userDetails);
+            User user = userRepository.findByEmail(loginUserDto.email()).orElseThrow(UserNotFoundException::new);
 
-            redisSessionService.saveLoginAt(token, System.currentTimeMillis());
+           String token = sessionService.createSession((UserDetailsImpl) authentication.getPrincipal());
 
-            return new RecoveryJwtTokenDto(token);
+            return new RecoveryJwtTokenDto(token, user.getId());
 
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException();
@@ -63,6 +70,8 @@ public class UserService {
             throw new EmailAlreadyExistsException();
         }
 
+        if(createUserDto.dataNascimento().isBefore(DATA_NASCIMENTO_VALIDA)) throw new InvalidDataException();
+
         User newUser = User.builder()
                 .email(createUserDto.email())
                 .password(securityConfiguration.passwordEncoder().encode(createUserDto.password()))
@@ -74,23 +83,15 @@ public class UserService {
         userRepository.save(newUser);
     }
 
-    public SessionResponseDto getProfile(HttpServletRequest request) {
-
-        String token = jwtTokenService.recoveryToken(request);
-        if (token == null) throw new MissingTokenException();
-
-        String userEmail = jwtTokenService.getSubjectFromToken(token);
-        if (userEmail == null) throw new InvalidTokenException();
+    public SessionResponseDto getProfile(HttpServletRequest request, Long id) {
 
         HttpSession session = request.getSession(false);
         if (session == null) throw new SessionExpiredException();
 
-        String sessionId = session.getId();
+        User user = userRepository.findById(id)
+                .orElseThrow(UserNotFoundException::new);
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException());
-
-        Long loginAt = redisSessionService.getLoginAt(token);
+        sessionService.isValidToken(request, user.getSession());
 
         UserDto userDto = new UserDto(
                 user.getNome(),
@@ -99,9 +100,18 @@ public class UserService {
         );
 
         return new SessionResponseDto(
-                sessionId,
-                loginAt,
+                session.getId(),
+                user.getSession().getExpiration(),
+                "192.168.1.21",
                 userDto
         );
     }
+
+    public boolean EmailIsValid(String email) {
+        String EMAIL_REGEX =
+                "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-zA-Z]{2,}$";
+        return email != null && email.matches(EMAIL_REGEX);
+    }
+
+
 }
