@@ -5,7 +5,7 @@ interface RegisterProps {
 }
 
 export default function Register({ onBackToLogin }: RegisterProps) {
-
+  // Note: Mantive 'email' como estado, mas enviaremos como 'username' pro Java
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -13,28 +13,46 @@ export default function Register({ onBackToLogin }: RegisterProps) {
   const [msg, setMsg] = useState("");
 
   async function handleRegister() {
+    setMsg(""); // Limpa mensagens anteriores
+
+    const formatarDataParaJava = (dataIso: string) => {
+        if (!dataIso) return null;
+        const [ano, mes, dia] = dataIso.split('-'); // Quebra a string nos traços
+        return `${dia}-${mes}-${ano}`; // Monta na ordem inversa
+    };
+
     try {
-      const response = await fetch('http://localhost:3000/register', {
+      // CORREÇÃO: Caminho relativo para funcionar no RR DNS
+      const response = await fetch('/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, birthDate })
+        // Java geralmente espera "username", então mapeamos email -> username
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          nome:name, 
+          dataNascimento: formatarDataParaJava(birthDate),
+          descricao: 'Novo usuário'
+        })
       });
 
-      const data = await response.json();
-
-      if(response.ok){
+      if (response.ok) {
         alert("Cadastro Realizado! Faça Login.");
         onBackToLogin();
-      }else{
-        setMsg(data.erro || "Erro ao cadastrar");
+      } else {
+        // Tenta ler mensagem de erro do backend, se houver
+        try {
+            const data = await response.json();
+            setMsg(data.message || "Erro ao cadastrar");
+        } catch {
+            setMsg("Erro ao cadastrar (Verifique os dados)");
+        }
       }
-    }catch(error){
+    } catch (error) {
       console.error(error);
       setMsg("Erro de conexão com o servidor");
     }
-    
   }
-
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
@@ -46,8 +64,6 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                 <span className="text-2xl">⚡</span>
                 <span>Cadastro de usuário</span>
               </h1>
-              <p className="text-xs text-slate-500">
-              </p>
             </div>
             <button
               onClick={onBackToLogin}
@@ -57,15 +73,16 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </button>
           </header>
 
-          {/* AQUI o Nathan implementa a lógica / integração com backend depois */}
           <form className="grid gap-3 text-sm">
             {msg && <div className="text-red-500 text-center font-bold">{msg}</div>}
+            
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-slate-700">Login</label>
+              <label className="font-semibold text-slate-700">Login (E-mail)</label>
               <input
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
-                placeholder="E-mail"
-                value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                value={email} 
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
 
@@ -75,7 +92,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
                 type="password"
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
                 placeholder="••••••••"
-                value={password} onChange={e => setPassword(e.target.value)}
+                value={password} 
+                onChange={e => setPassword(e.target.value)}
               />
             </div>
 
@@ -84,7 +102,9 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               <input
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
                 placeholder="Nome e sobrenome"
-                value={name} onChange={e => setName(e.target.value)}              />
+                value={name} 
+                onChange={e => setName(e.target.value)}
+              />
             </div>
 
             <div className="flex flex-col gap-1">
@@ -92,10 +112,10 @@ export default function Register({ onBackToLogin }: RegisterProps) {
               <input
                 type="date"
                 className="h-9 rounded-md border border-slate-300 px-3 text-slate-800"
-                value={birthDate} onChange={e => setBirthDate(e.target.value)}
+                value={birthDate} 
+                onChange={e => setBirthDate(e.target.value)}
               />
             </div>
-
 
             <button
               type="button"
@@ -106,9 +126,8 @@ export default function Register({ onBackToLogin }: RegisterProps) {
             </button>
           </form>
         </div>
-
         <p className="text-center text-xs text-slate-500 mt-4">
-          Esta tela é mock – integração real com backend será feita depois.
+            PSReletric.com • Cadastro Integrado
         </p>
       </div>
     </div>
