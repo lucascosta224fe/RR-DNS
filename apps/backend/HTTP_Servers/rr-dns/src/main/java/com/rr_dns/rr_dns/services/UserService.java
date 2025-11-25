@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpSession;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -26,13 +27,10 @@ public class UserService {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private JwtTokenService jwtTokenService;
-
-    @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private RedisSessionService redisSessionService;
+    private SessionService sessionService;
 
     @Autowired
     private SecurityConfiguration securityConfiguration;
@@ -54,12 +52,11 @@ public class UserService {
                     )
             );
 
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String token = jwtTokenService.generateToken(userDetails);
+            User user = userRepository.findByEmail(loginUserDto.email()).orElseThrow(UserNotFoundException::new);
 
-            redisSessionService.saveLoginAt(token, System.currentTimeMillis());
+           String token = sessionService.createSession((UserDetailsImpl) authentication.getPrincipal());
 
-            return new RecoveryJwtTokenDto(token);
+            return new RecoveryJwtTokenDto(token, user.getId());
 
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException();
@@ -86,23 +83,15 @@ public class UserService {
         userRepository.save(newUser);
     }
 
-    public SessionResponseDto getProfile(HttpServletRequest request) {
-
-        String token = jwtTokenService.recoveryToken(request);
-        if (token == null) throw new MissingTokenException();
-
-        String userEmail = jwtTokenService.getSubjectFromToken(token);
-        if (userEmail == null) throw new InvalidTokenException();
+    public SessionResponseDto getProfile(HttpServletRequest request, Long id) {
 
         HttpSession session = request.getSession(false);
         if (session == null) throw new SessionExpiredException();
 
-        String sessionId = session.getId();
-
-        User user = userRepository.findByEmail(userEmail)
+        User user = userRepository.findById(id)
                 .orElseThrow(UserNotFoundException::new);
 
-        Long loginAt = redisSessionService.getLoginAt(token);
+        sessionService.isValidToken(request, user.getSession());
 
         UserDto userDto = new UserDto(
                 user.getNome(),
@@ -111,8 +100,9 @@ public class UserService {
         );
 
         return new SessionResponseDto(
-                sessionId,
-                loginAt,
+                session.getId(),
+                user.getSession().getExpiration(),
+                "192.168.1.21",
                 userDto
         );
     }

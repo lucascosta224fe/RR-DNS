@@ -13,6 +13,6 @@ public record CreateUserDto(
         @Past(message = "A data de nascimento deve ser no passado")
         @JsonFormat(pattern = "dd-MM-yyyy")
         @NotNull LocalDate dataNascimento,
-        @Size(max = 2000, message = "A descrição tem um limite de 2000 digitos.") @NotBlank String descricao
+        @Size(max = 255, message = "A descrição tem um limite de 255 digitos.") String descricao
 ) {
 }

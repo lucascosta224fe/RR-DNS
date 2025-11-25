@@ -20,7 +20,7 @@ class AuthenticationProfileTest extends TestConfig {
                 .then()
                 .statusCode(200)
                 .body("sessionId", notNullValue())
-                .body("loginAt", notNullValue())
+                .body("expiration", notNullValue())
                 .body("user.name", equalTo("User Test Auto"))
                 .body("user.dataNascimento", equalTo("1919-11-18"))
                 .body("user.descricao", equalTo("Registro automático para testes"));

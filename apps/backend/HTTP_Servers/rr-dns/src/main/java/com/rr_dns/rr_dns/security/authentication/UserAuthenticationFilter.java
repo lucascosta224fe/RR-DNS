@@ -1,12 +1,10 @@
 package com.rr_dns.rr_dns.security.authentication;
 
-import com.rr_dns.rr_dns.exception.AuthenticationProcessException;
 import com.rr_dns.rr_dns.exception.InvalidTokenException;
 import com.rr_dns.rr_dns.exception.MissingTokenException;
 import com.rr_dns.rr_dns.security.config.SecurityConfiguration;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.rr_dns.rr_dns.security.userDetails.UserDetailsServiceImpl;
-import com.rr_dns.rr_dns.services.RedisSessionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,14 +23,11 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
     private final UserDetailsServiceImpl userDetailsService;
-    private final RedisSessionService redisSessionService;
 
     public UserAuthenticationFilter(JwtTokenService jwtTokenService,
-                                    UserDetailsServiceImpl userDetailsService,
-                                    RedisSessionService redisSessionService) {
+                                    UserDetailsServiceImpl userDetailsService) {
         this.jwtTokenService = jwtTokenService;
         this.userDetailsService = userDetailsService;
-        this.redisSessionService = redisSessionService;
     }
 
     @Override
@@ -59,10 +54,6 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
                 throw new MissingTokenException();
             }
 
-            // 2 - VERIFICAÇÃO NO REDIS (revogação, logout, expiração no Redis)
-            if (!redisSessionService.isTokenValid(token)) {
-                throw new InvalidTokenException();
-            }
 
             // 3 - Extrai e valida via JWT
             String userEmail = jwtTokenService.getSubjectFromToken(token);
