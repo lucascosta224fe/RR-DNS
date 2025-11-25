@@ -25,7 +25,13 @@ export default function UserProfile({ session, uptime, onLogout }: Props) {
 
   // Efeito para validar a sessão no Redis e pegar o nome do servidor
   useEffect(() => {
-    fetch("/auth/profile/"+localStorage.getItem("idUser"))
+    fetch("/auth/profile/"+localStorage.getItem("idUser"), {
+  method: "GET",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer "+localStorage.getItem("token")
+  }
+})
       .then(async (res) => {
         if (res.ok) {
           const data = await res.json();
